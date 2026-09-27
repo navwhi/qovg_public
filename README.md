@@ -9,7 +9,7 @@ Deploys vLLM, Open WebUI, Prometheus/Grafana and an Nginx HTTPS reverse proxy (n
         │  HTTPS (self-signed certificate) — only ports 80/443 are open
         ▼
 ┌───────────────────────────────────────────────────────────────────────┐
-│ Host: Debian 13 + NVIDIA GPU             (compose project: qwen-stack) │
+│ Host: Debian 13 + NVIDIA GPU             (compose project: qwen-stack)│
 │                                                                       │
 │   nginx   :80 → redirect to HTTPS   |   :443 TLS termination          │
 │     │                                                                 │
