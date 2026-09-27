@@ -60,7 +60,6 @@ Overview:
 
 ```bash
 docker compose ps                                                # services and their state
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"   # only nginx should list ports
 docker stats --no-stream                                         # CPU / RAM per container
 docker compose config                                            # final rendered configuration
 ```
@@ -84,13 +83,6 @@ docker compose exec vllm curl -s localhost:8000/metrics | head   # metrics scrap
 ```
 
 Network, volumes and disk usage:
-
-```bash
-docker network inspect qwen-stack_default   # containers and their internal IPs
-docker volume ls                            # e.g. qwen-stack_open-webui-data
-docker images                               # images and their size
-docker system df                            # disk space used by Docker
-```
 
 Operations:
 
