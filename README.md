@@ -274,9 +274,6 @@ internal company PKI instead, see the comments in
 `local_hosts` adds the subdomains to `/etc/hosts` on the controller, so no IP
 needs to be typed in the browser.
 
-## Grafana
-
-
 ## Example
 <img width="2558" height="1362" alt="image" src="https://github.com/user-attachments/assets/29c2959c-2314-4ac9-8da9-44fe1fa6aac4" />
 
