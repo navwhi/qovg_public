@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: vllm_tool_parser
+  author: "Infra team"
+  description: "Fetches the chat template used by vLLM for Qwen2.5-Coder tool calling."
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - "13"
+dependencies: []

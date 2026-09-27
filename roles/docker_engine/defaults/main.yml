@@ -1,0 +1,3 @@
+---
+# Debian release used for the Docker APT repository (e.g. "trixie").
+docker_engine_debian_suite: "{{ ansible_facts['distribution_release'] }}"

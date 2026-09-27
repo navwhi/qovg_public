@@ -1,0 +1,65 @@
+---
+- name: Download the NVIDIA Container Toolkit GPG key
+  ansible.builtin.get_url:
+    url: https://nvidia.github.io/libnvidia-container/gpgkey
+    dest: /tmp/nvidia-container-toolkit.gpg.asc
+    mode: "0644"
+
+- name: Dearmor the GPG key (binary format expected by APT)
+  ansible.builtin.command: >
+    gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    /tmp/nvidia-container-toolkit.gpg.asc
+  args:
+    creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+- name: Download the NVIDIA Container Toolkit repository list
+  ansible.builtin.get_url:
+    url: https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
+    dest: /tmp/nvidia-container-toolkit.list
+    mode: "0644"
+
+- name: Install the repository list with the proper signing key
+  ansible.builtin.shell: >
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g'
+    /tmp/nvidia-container-toolkit.list > /etc/apt/sources.list.d/nvidia-container-toolkit.list
+  args:
+    creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+- name: Install the NVIDIA Container Toolkit
+  ansible.builtin.apt:
+    name: "{{ nvidia_container_toolkit_packages }}"
+    state: present
+    update_cache: true
+
+- name: Read the current Docker daemon configuration (if any)
+  ansible.builtin.slurp:
+    src: /etc/docker/daemon.json
+  register: nvidia_container_toolkit_daemon_json
+  failed_when: false
+
+- name: Configure the NVIDIA runtime for Docker (only if not done yet)
+  ansible.builtin.command: nvidia-ctk runtime configure --runtime=docker
+  changed_when: true
+  when: >-
+    nvidia_container_toolkit_daemon_json.content is not defined
+    or 'nvidia' not in (nvidia_container_toolkit_daemon_json.content | b64decode)
+  notify: Restart Docker
+
+- name: Apply the Docker restart now, before the stack is deployed
+  ansible.builtin.meta: flush_handlers
+
+- name: Check that Docker containers can access the GPU
+  when: nvidia_container_toolkit_smoke_test | bool
+  block:
+    - name: Run nvidia-smi inside a throwaway CUDA container
+      ansible.builtin.command: >
+        docker run --rm --gpus all {{ nvidia_container_toolkit_smoke_test_image }} nvidia-smi
+      changed_when: false
+  rescue:
+    - name: Explain how to fix the GPU access from Docker
+      ansible.builtin.fail:
+        msg: >-
+          Docker cannot access the GPU. Check that nvidia-smi works on the host,
+          run "ldconfig", and make sure libnvidia-ml.so.1 exists
+          (find / -name 'libnvidia-ml.so*'). If it is missing, reinstall the
+          NVIDIA driver (02_nvidia_driver.yml) and try again.

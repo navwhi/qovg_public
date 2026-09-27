@@ -1,0 +1,8 @@
+---
+app_directories_list:
+  - "{{ qwen_model_cache_dir }}"
+  - "{{ qwen_tool_parser_dir }}"
+  - "{{ qwen_monitoring_dir }}"
+  - "{{ qwen_nginx_conf_dir }}"
+  - "{{ qwen_nginx_ssl_dir }}"
+  - "{{ qwen_compose_dir }}"

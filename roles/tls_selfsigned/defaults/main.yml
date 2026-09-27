@@ -1,0 +1,9 @@
+---
+tls_selfsigned_days: 825
+tls_selfsigned_key_size: 2048
+tls_selfsigned_cert_name: "qwen-code"
+# Subdomains covered by the certificate (SAN), prefixed to qwen_domain.
+tls_selfsigned_subdomains:
+  - app
+  - api
+  - grafana

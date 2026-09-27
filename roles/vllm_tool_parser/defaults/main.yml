@@ -1,0 +1,5 @@
+---
+vllm_tool_parser_repo: "https://github.com/hanXen/vllm-qwen2.5-coder-tool-parser.git"
+vllm_tool_parser_version: "main"
+vllm_tool_parser_template_name: "tool_chat_template_qwen2_5_coder.jinja"
+vllm_tool_parser_clone_dir: "/tmp/tool-parser-src"

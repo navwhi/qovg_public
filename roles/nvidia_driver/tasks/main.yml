@@ -1,0 +1,101 @@
+---
+- name: Check whether a working NVIDIA driver is already present
+  ansible.builtin.command: nvidia-smi
+  register: nvidia_driver_smi_check
+  changed_when: false
+  failed_when: false
+
+- name: Nothing to do, the NVIDIA driver already works (or is not managed)
+  ansible.builtin.debug:
+    msg: "Skipping driver installation: NVIDIA driver already working, or qwen_manage_nvidia_driver is false."
+  when: not (qwen_manage_nvidia_driver | bool) or nvidia_driver_smi_check.rc == 0
+
+- name: Install the NVIDIA driver from the .run installer
+  when:
+    - qwen_manage_nvidia_driver | bool
+    - nvidia_driver_smi_check.rc != 0
+  block:
+    - name: Check whether nouveau is still loaded
+      ansible.builtin.command: grep -qw '^nouveau' /proc/modules
+      register: nvidia_driver_nouveau_loaded
+      changed_when: false
+      failed_when: false
+
+    - name: Fail if nouveau is still loaded
+      ansible.builtin.fail:
+        msg: >-
+          The nouveau driver is still loaded. Run 01_system_prep.yml first,
+          let the machine reboot, then run this playbook again.
+      when: nvidia_driver_nouveau_loaded.rc == 0
+
+    - name: Check whether an NVIDIA kernel module is already installed (reboot pending)
+      ansible.builtin.command: modinfo nvidia
+      register: nvidia_driver_module_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Driver already installed, only the reboot is pending
+      ansible.builtin.debug:
+        msg: "An NVIDIA kernel module is already installed but not loaded yet: skipping the installer, rebooting."
+      when: nvidia_driver_module_installed.rc == 0
+
+    - name: Install the driver from the most recent NVIDIA .run file
+      when: nvidia_driver_module_installed.rc != 0
+      block:
+        - name: Make sure headers for the running kernel are installed (needed by DKMS)
+          ansible.builtin.apt:
+            name: "linux-headers-{{ ansible_facts['kernel'] }}"
+            state: present
+
+        - name: Find .run files in the source and staging directories
+          ansible.builtin.find:
+            paths:
+              - "{{ qwen_nvidia_run_source_dir }}"
+              - "{{ qwen_nvidia_run_staging_dir }}"
+            patterns: "*.run"
+          register: nvidia_driver_run_files
+
+        - name: Keep only the .run files whose name contains "nvidia"
+          ansible.builtin.set_fact:
+            nvidia_driver_run_candidates: >-
+              {{ nvidia_driver_run_files.files
+                 | selectattr('path', 'search', '(?i)nvidia')
+                 | list }}
+
+        - name: Fail if no NVIDIA .run installer was found
+          ansible.builtin.fail:
+            msg: >-
+              No .run file containing "nvidia" in its name was found in
+              {{ qwen_nvidia_run_source_dir }} or {{ qwen_nvidia_run_staging_dir }}.
+              Note: on Debian 13, /tmp is wiped on every reboot. Put the installer
+              back in {{ qwen_nvidia_run_source_dir }} and run this playbook again.
+          when: nvidia_driver_run_candidates | length == 0
+
+        - name: Select the most recent NVIDIA .run installer
+          ansible.builtin.set_fact:
+            nvidia_driver_run_file: "{{ (nvidia_driver_run_candidates | sort(attribute='mtime') | last).path }}"
+
+        - name: Show the selected installer
+          ansible.builtin.debug:
+            msg: >-
+              {{ nvidia_driver_run_candidates | length }} NVIDIA .run file(s) found;
+              using the most recent one: {{ nvidia_driver_run_file }}
+
+        - name: Make the NVIDIA .run installer executable
+          ansible.builtin.file:
+            path: "{{ nvidia_driver_run_file }}"
+            mode: "0755"
+
+        - name: Run the NVIDIA .run installer
+          ansible.builtin.command: "{{ nvidia_driver_run_file }} {{ nvidia_driver_install_flags }}"
+          changed_when: true
+
+        - name: Refresh the dynamic linker cache (makes libnvidia-ml.so visible)
+          ansible.builtin.command: ldconfig
+          changed_when: true
+
+    - name: Reboot to load the freshly installed NVIDIA driver
+      ansible.builtin.include_tasks: reboot.yml
+      vars:
+        qwen_next_playbook: "{{ nvidia_driver_next_playbook }}"
+        qwen_reboot_reason: "load the NVIDIA driver"

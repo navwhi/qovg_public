@@ -1,0 +1,6 @@
+---
+# Example only. Create the real, encrypted file with:
+#   ansible-vault create inventory/group_vars/qwen_servers/vault.yml
+# and put your real values in it.
+open_webui_api_key: "change-me"
+grafana_admin_password: "change-me"

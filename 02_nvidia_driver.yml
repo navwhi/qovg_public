@@ -1,0 +1,9 @@
+---
+# Step 2: NVIDIA driver installation from the local .run installer.
+# May reboot the machine. Then run 03_stack.yml.
+- name: "02 - NVIDIA driver"
+  hosts: qwen_servers
+  become: true
+  gather_facts: true
+  roles:
+    - role: nvidia_driver

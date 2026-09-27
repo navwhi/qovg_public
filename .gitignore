@@ -1,0 +1,21 @@
+# Secrets
+vault.yml
+*.vault
+vault_pass.txt
+.vault_pass.txt
+*.pem
+*.key
+*.crt
+
+# Ansible
+*.retry
+collections/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store

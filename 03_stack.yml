@@ -1,0 +1,16 @@
+---
+# Step 3: Docker, NVIDIA Container Toolkit and the application stack.
+# No reboot in this playbook.
+- name: "03 - Docker and application stack"
+  hosts: qwen_servers
+  become: true
+  gather_facts: true
+  roles:
+    - role: docker_engine
+    - role: nvidia_container_toolkit
+    - role: app_directories
+    - role: vllm_tool_parser
+    - role: tls_selfsigned
+    - role: stack_config
+    - role: stack_deploy
+    - role: local_hosts

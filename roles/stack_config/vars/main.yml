@@ -1,0 +1,7 @@
+---
+# Secrets that must not keep their CHANGEME default value.
+stack_config_required_secrets:
+  - name: open_webui_api_key
+    value: "{{ open_webui_api_key }}"
+  - name: grafana_admin_password
+    value: "{{ grafana_admin_password }}"

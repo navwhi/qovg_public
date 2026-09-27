@@ -1,0 +1,39 @@
+---
+# Shared reboot logic for this role.
+# The ansible.builtin.reboot module refuses to reboot the controller
+# (the machine running Ansible), because it would kill its own process.
+# In that case we schedule a delayed reboot with systemd-run, so the
+# playbook can finish cleanly first. The operator then runs the next
+# playbook once the machine is back.
+
+- name: Determine whether the target is the Ansible controller itself
+  ansible.builtin.set_fact:
+    qwen_target_is_controller: >-
+      {{ (ansible_connection | default('ssh')) == 'local'
+         or (ansible_facts['machine_id'] | default('none'))
+            == (lookup('ansible.builtin.file', '/etc/machine-id', errors='ignore') | default('', true) | trim) }}
+
+- name: Schedule a delayed reboot (target is the controller)
+  ansible.builtin.command: >
+    systemd-run --on-active={{ qwen_reboot_delay_seconds }}
+    --timer-property=AccuracySec=1s
+    /usr/bin/systemctl reboot
+  changed_when: true
+  when: qwen_target_is_controller | bool
+
+- name: Tell the operator what to run after the reboot
+  ansible.builtin.debug:
+    msg: >-
+      Reboot scheduled in {{ qwen_reboot_delay_seconds }} seconds
+      ({{ qwen_reboot_reason }}). Once the machine is back, run:
+      ansible-playbook {{ qwen_next_playbook }}
+  when: qwen_target_is_controller | bool
+
+- name: Reboot the remote target and wait for it to come back
+  ansible.builtin.reboot:
+    msg: "Reboot initiated by Ansible: {{ qwen_reboot_reason }}"
+    reboot_timeout: 900
+  when: not (qwen_target_is_controller | bool)
+
+- name: Stop this playbook here (next steps belong to the next playbook)
+  ansible.builtin.meta: end_play

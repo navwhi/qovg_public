@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: nvidia_nouveau_blacklist
+  author: "Infra team"
+  description: "Blacklists nouveau, stages the NVIDIA .run installer, reboots if needed."
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - "13"
+dependencies: []

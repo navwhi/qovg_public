@@ -1,0 +1,29 @@
+---
+# ------------------------------------------------------------------
+# Qwen model and vLLM settings
+# ------------------------------------------------------------------
+qwen_model: "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
+qwen_served_model_name: "qwen-coder"
+qwen_max_model_len: 16384
+qwen_gpu_memory_utilization: 0.85
+qwen_tool_call_parser: "qwen3_xml"
+
+# ------------------------------------------------------------------
+# Secrets — MUST be overridden in inventory/group_vars/qwen_servers/vault.yml
+# (encrypted with ansible-vault). The role refuses to run with CHANGEME.
+# ------------------------------------------------------------------
+open_webui_api_key: "CHANGEME"
+grafana_admin_password: "CHANGEME"
+
+# ------------------------------------------------------------------
+# LDAP / Active Directory — disabled for now (local accounts are used
+# while this stays false).
+# ------------------------------------------------------------------
+qwen_enable_ldap: false
+qwen_ldap_server_host: "dc.qovg.local"
+qwen_ldap_server_port: 636
+qwen_ldap_app_dn: "cn=svc-openwebui,ou=service-accounts,dc=qovg,dc=local"
+qwen_ldap_app_password: "CHANGEME"
+qwen_ldap_search_base: "ou=users,dc=qovg,dc=local"
+qwen_ldap_attribute_username: "sAMAccountName"
+qwen_ldap_search_filter: "(memberOf=cn=qwen-code-users,ou=groups,dc=qovg,dc=local)"

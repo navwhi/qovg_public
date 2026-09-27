@@ -1,0 +1,39 @@
+---
+- name: Build the list of hostnames covered by the certificate
+  ansible.builtin.set_fact:
+    tls_selfsigned_hostnames: "{{ tls_selfsigned_subdomains | map('regex_replace', '$', '.' ~ qwen_domain) | list }}"
+
+- name: Generate the self-signed certificate (key + certificate, multi-domain SAN)
+  ansible.builtin.command: >
+    openssl req -x509 -nodes
+    -days {{ tls_selfsigned_days }}
+    -newkey rsa:{{ tls_selfsigned_key_size }}
+    -keyout {{ qwen_nginx_ssl_dir }}/{{ tls_selfsigned_cert_name }}.key
+    -out {{ qwen_nginx_ssl_dir }}/{{ tls_selfsigned_cert_name }}.crt
+    -subj "/CN={{ tls_selfsigned_hostnames[0] }}"
+    -addext "subjectAltName={{ tls_selfsigned_hostnames | map('regex_replace', '^', 'DNS:') | join(',') }}"
+  args:
+    creates: "{{ qwen_nginx_ssl_dir }}/{{ tls_selfsigned_cert_name }}.crt"
+
+- name: Restrict access to the private key
+  ansible.builtin.file:
+    path: "{{ qwen_nginx_ssl_dir }}/{{ tls_selfsigned_cert_name }}.key"
+    mode: "0600"
+
+# ------------------------------------------------------------------
+# Internal company PKI (disabled) — to switch to a signed certificate
+# later, replace the steps above with:
+#   1. Generate a key + CSR with the same SAN list:
+#      openssl req -new -newkey rsa:2048 -nodes \
+#        -keyout <ssl_dir>/qwen-code.key -out <ssl_dir>/qwen-code.csr \
+#        -subj "/CN=app.<domain>" \
+#        -addext "subjectAltName=DNS:app.<domain>,DNS:api.<domain>,..."
+#   2. Have the CSR signed by your internal CA (AD CS web portal
+#      https://<ca-server>/certsrv, or "certreq" from a domain-joined
+#      Windows machine).
+#   3. Concatenate signed cert + intermediate + root into
+#      <ssl_dir>/qwen-code.crt (same file name, Nginx config unchanged).
+#   4. Restart Nginx: docker compose restart nginx
+# Note: this task only runs when the .crt file does not exist yet
+# ("creates"), so a manually installed signed certificate is kept.
+# ------------------------------------------------------------------

@@ -1,0 +1,23 @@
+---
+system_prep_base_packages:
+  - sudo
+  - curl
+  - wget
+  - gnupg
+  - ca-certificates
+  - apt-transport-https
+  - git
+  - vim
+  - htop
+  - tmux
+  - unzip
+  - build-essential
+  - dkms
+  - pkg-config
+  - openssh-server
+  - chrony
+  - net-tools
+  - smartmontools
+  - lm-sensors
+  - python3-debian      # required by ansible.builtin.deb822_repository
+  - linux-headers-amd64 # tracks the latest kernel, so DKMS keeps working after kernel upgrades

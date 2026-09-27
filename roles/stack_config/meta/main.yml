@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: stack_config
+  author: "Infra team"
+  description: "Renders the stack configuration files (docker-compose, Nginx, Prometheus)."
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - "13"
+dependencies: []

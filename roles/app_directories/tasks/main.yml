@@ -1,0 +1,7 @@
+---
+- name: Create the application directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ app_directories_list }}"

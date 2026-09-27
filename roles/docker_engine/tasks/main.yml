@@ -1,0 +1,44 @@
+---
+- name: Create the APT keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Download the Docker GPG key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+
+- name: Add the Docker APT repository (deb822 format)
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: "https://download.docker.com/linux/debian"
+    suites: "{{ docker_engine_debian_suite }}"
+    components: stable
+    architectures: "{{ ansible_facts['architecture'] | replace('x86_64', 'amd64') }}"
+    signed_by: /etc/apt/keyrings/docker.asc
+    state: present
+
+- name: Install Docker Engine and the Compose plugin
+  ansible.builtin.apt:
+    name: "{{ docker_engine_packages }}"
+    state: present
+    update_cache: true
+
+- name: Add the invoking (non-root) user to the docker group
+  ansible.builtin.user:
+    name: "{{ ansible_facts['env']['SUDO_USER'] }}"
+    groups: docker
+    append: true
+  when:
+    - ansible_facts['env']['SUDO_USER'] is defined
+    - ansible_facts['env']['SUDO_USER'] != 'root'
+
+- name: Make sure Docker is started and enabled
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true

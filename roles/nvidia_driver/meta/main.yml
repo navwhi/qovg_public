@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: nvidia_driver
+  author: "Infra team"
+  description: "Installs the NVIDIA driver from the most recent nvidia .run found locally, then reboots."
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - "13"
+dependencies: []

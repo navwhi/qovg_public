@@ -1,0 +1,8 @@
+---
+# Playbook the operator must run after the reboot triggered by this role.
+nvidia_driver_next_playbook: "03_stack.yml"
+# Flags passed to the NVIDIA .run installer.
+# --skip-module-load: the module is only loaded at the next boot. Loading it
+# live takes over the display and can crash a running graphical session,
+# killing the terminal (and Ansible) before the reboot is scheduled.
+nvidia_driver_install_flags: "--dkms --silent --no-questions --skip-module-load"

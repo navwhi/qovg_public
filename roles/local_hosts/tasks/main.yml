@@ -1,0 +1,20 @@
+---
+- name: Determine the server IP address to use in /etc/hosts
+  ansible.builtin.set_fact:
+    local_hosts_server_ip: "{{ ansible_facts['default_ipv4']['address'] }}"
+
+- name: Show the detected IP address
+  ansible.builtin.debug:
+    msg: "Detected IP for {{ inventory_hostname }}: {{ local_hosts_server_ip }}"
+
+- name: Add the stack subdomains to /etc/hosts on the controller
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - qwen-code ({{ qwen_domain }})"
+    block: |
+      {% for sub in local_hosts_subdomains %}
+      {{ local_hosts_server_ip }} {{ sub }}.{{ qwen_domain }}
+      {% endfor %}
+  delegate_to: localhost
+  become: true
+  when: qwen_manage_local_hosts_file | bool

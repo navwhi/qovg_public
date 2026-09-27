@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: app_directories
+  author: "Infra team"
+  description: "Creates the directories used by the stack (models, configs, certificates, compose)."
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - "13"
+dependencies: []

@@ -1,0 +1,9 @@
+---
+# Update /etc/hosts on the controller (the machine running Ansible)
+# so the subdomains resolve to the server IP without internal DNS.
+# Set to false if name resolution is handled another way.
+qwen_manage_local_hosts_file: true
+local_hosts_subdomains:
+  - app
+  - api
+  - grafana

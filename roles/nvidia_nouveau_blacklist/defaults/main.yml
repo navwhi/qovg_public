@@ -1,0 +1,3 @@
+---
+# Playbook the operator must run after the reboot triggered by this role.
+nvidia_nouveau_blacklist_next_playbook: "02_nvidia_driver.yml"

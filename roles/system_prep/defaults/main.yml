@@ -1,0 +1,3 @@
+---
+# Debian components enabled in addition to "main".
+system_prep_extra_components: "contrib non-free non-free-firmware"

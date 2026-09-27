@@ -1,0 +1,62 @@
+---
+- name: Check whether a working NVIDIA driver is already present
+  ansible.builtin.command: nvidia-smi
+  register: nvidia_nouveau_smi_check
+  changed_when: false
+  failed_when: false
+
+- name: Nothing to do, the NVIDIA driver already works (or is not managed)
+  ansible.builtin.debug:
+    msg: "Skipping nouveau blacklist: NVIDIA driver already working, or qwen_manage_nvidia_driver is false."
+  when: not (qwen_manage_nvidia_driver | bool) or nvidia_nouveau_smi_check.rc == 0
+
+- name: Blacklist nouveau and reboot if needed
+  when:
+    - qwen_manage_nvidia_driver | bool
+    - nvidia_nouveau_smi_check.rc != 0
+  block:
+    - name: Blacklist the open-source nouveau driver
+      ansible.builtin.copy:
+        dest: /etc/modprobe.d/blacklist-nouveau.conf
+        content: |
+          blacklist nouveau
+          options nouveau modeset=0
+        mode: "0644"
+      register: nvidia_nouveau_blacklist_file
+
+    - name: Regenerate the initramfs
+      ansible.builtin.command: update-initramfs -u
+      changed_when: true
+      when: nvidia_nouveau_blacklist_file.changed
+
+    - name: Check whether nouveau is currently loaded
+      ansible.builtin.command: grep -qw '^nouveau' /proc/modules
+      register: nvidia_nouveau_loaded
+      changed_when: false
+      failed_when: false
+
+    # Debian 13 mounts /tmp as tmpfs: it is wiped on every reboot.
+    # Copy the NVIDIA installer to a persistent directory first, so
+    # the next playbook can still find it after the reboot.
+    - name: Find NVIDIA .run installers in the source directory
+      ansible.builtin.find:
+        paths: "{{ qwen_nvidia_run_source_dir }}"
+        patterns: "*.run"
+      register: nvidia_nouveau_run_files
+
+    - name: Copy NVIDIA .run installers to a persistent directory (survives the reboot)
+      ansible.builtin.command: >
+        cp -p "{{ item.path }}" "{{ qwen_nvidia_run_staging_dir }}/"
+      args:
+        creates: "{{ qwen_nvidia_run_staging_dir }}/{{ item.path | basename }}"
+      loop: "{{ nvidia_nouveau_run_files.files | selectattr('path', 'search', '(?i)nvidia') | list }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      when: qwen_nvidia_run_source_dir != qwen_nvidia_run_staging_dir
+
+    - name: Reboot so that nouveau is no longer loaded
+      ansible.builtin.include_tasks: reboot.yml
+      vars:
+        qwen_next_playbook: "{{ nvidia_nouveau_blacklist_next_playbook }}"
+        qwen_reboot_reason: "unload the nouveau driver"
+      when: nvidia_nouveau_blacklist_file.changed or nvidia_nouveau_loaded.rc == 0

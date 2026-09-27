@@ -1,0 +1,10 @@
+---
+# Step 1: base system preparation + nouveau blacklist.
+# May reboot the machine. Then run 02_nvidia_driver.yml.
+- name: "01 - System preparation and nouveau blacklist"
+  hosts: qwen_servers
+  become: true
+  gather_facts: true
+  roles:
+    - role: system_prep
+    - role: nvidia_nouveau_blacklist

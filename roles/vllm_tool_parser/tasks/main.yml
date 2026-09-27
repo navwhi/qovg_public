@@ -1,0 +1,13 @@
+---
+- name: Clone the tool calling template repository
+  ansible.builtin.git:
+    repo: "{{ vllm_tool_parser_repo }}"
+    dest: "{{ vllm_tool_parser_clone_dir }}"
+    version: "{{ vllm_tool_parser_version }}"
+
+- name: Copy the chat template where vLLM expects it
+  ansible.builtin.copy:
+    src: "{{ vllm_tool_parser_clone_dir }}/{{ vllm_tool_parser_template_name }}"
+    dest: "{{ qwen_tool_parser_dir }}/{{ vllm_tool_parser_template_name }}"
+    remote_src: true
+    mode: "0644"

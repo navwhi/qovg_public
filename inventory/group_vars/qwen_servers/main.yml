@@ -1,0 +1,23 @@
+---
+# Variables shared by every role and playbook.
+# Secrets do NOT belong here: put them in vault.yml (same directory),
+# encrypted with: ansible-vault create inventory/group_vars/qwen_servers/vault.yml
+
+# Internal domain used for the subdomains (app., api., grafana., ...)
+qwen_domain: "qovg.local"
+
+# NVIDIA driver handling
+qwen_manage_nvidia_driver: true        # false = never touch the driver
+qwen_nvidia_run_source_dir: "/tmp"     # where you drop the NVIDIA .run installer
+qwen_nvidia_run_staging_dir: "/var/tmp" # persistent copy (Debian 13 wipes /tmp on reboot)
+
+# Delay before the reboot when the target is the controller itself
+qwen_reboot_delay_seconds: 20
+
+# Directories on the target
+qwen_model_cache_dir: "/srv/models/huggingface"
+qwen_tool_parser_dir: "/opt/vllm-tool-parser"
+qwen_monitoring_dir: "/opt/monitoring"
+qwen_nginx_conf_dir: "/opt/nginx/conf.d"
+qwen_nginx_ssl_dir: "/opt/nginx/ssl-selfsigned"
+qwen_compose_dir: "/opt/qwen-stack"

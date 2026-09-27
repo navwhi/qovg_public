@@ -1,0 +1,4 @@
+---
+# Run a throwaway CUDA container to prove Docker can see the GPU.
+nvidia_container_toolkit_smoke_test: true
+nvidia_container_toolkit_smoke_test_image: "nvidia/cuda:12.6.0-base-ubuntu24.04"

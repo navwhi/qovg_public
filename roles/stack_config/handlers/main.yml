@@ -1,0 +1,17 @@
+---
+# Handlers run at the end of the play, i.e. after stack_deploy has
+# started the containers. Files mounted into containers are not
+# tracked by Compose, so the affected services are reloaded here.
+- name: Reload Nginx
+  ansible.builtin.command: docker compose exec -T nginx nginx -s reload
+  args:
+    chdir: "{{ qwen_compose_dir }}"
+  changed_when: true
+  failed_when: false
+
+- name: Restart Prometheus
+  ansible.builtin.command: docker compose restart prometheus
+  args:
+    chdir: "{{ qwen_compose_dir }}"
+  changed_when: true
+  failed_when: false

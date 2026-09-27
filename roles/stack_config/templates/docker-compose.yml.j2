@@ -1,0 +1,89 @@
+{{ ansible_managed | comment }}
+# Only the nginx service publishes ports (80/443). Every other service
+# is reachable from the internal Docker network only.
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    restart: always
+    ipc: host
+    # No published port: only reachable from other containers.
+    volumes:
+      - {{ qwen_model_cache_dir }}:/root/.cache/huggingface
+      - {{ qwen_tool_parser_dir }}:/tool-parser:ro
+    command: >
+      --model {{ qwen_model }}
+      --served-model-name {{ qwen_served_model_name }}
+      --host 0.0.0.0
+      --port 8000
+      --max-model-len {{ qwen_max_model_len }}
+      --gpu-memory-utilization {{ qwen_gpu_memory_utilization }}
+      --enable-auto-tool-choice
+      --tool-call-parser {{ qwen_tool_call_parser }}
+      --chat-template /tool-parser/tool_chat_template_qwen2_5_coder.jinja
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    restart: always
+    depends_on:
+      - vllm
+    environment:
+      OPENAI_API_BASE_URL: "http://vllm:8000/v1"
+      OPENAI_API_KEY: "{{ open_webui_api_key }}"
+      CORS_ALLOW_ORIGIN: "https://app.{{ qwen_domain }}"
+      WEBUI_SESSION_COOKIE_SECURE: "true"
+      WEBUI_AUTH_COOKIE_SECURE: "true"
+{% if qwen_enable_ldap %}
+      ENABLE_LDAP: "true"
+      LDAP_SERVER_HOST: "{{ qwen_ldap_server_host }}"
+      LDAP_SERVER_PORT: "{{ qwen_ldap_server_port }}"
+      LDAP_USE_TLS: "true"
+      LDAP_APP_DN: "{{ qwen_ldap_app_dn }}"
+      LDAP_APP_PASSWORD: "{{ qwen_ldap_app_password }}"
+      LDAP_SEARCH_BASE: "{{ qwen_ldap_search_base }}"
+      LDAP_ATTRIBUTE_FOR_USERNAME: "{{ qwen_ldap_attribute_username }}"
+      LDAP_SEARCH_FILTER: "{{ qwen_ldap_search_filter }}"
+{% else %}
+      # --- LDAP disabled (qwen_enable_ldap: false) ---
+      # Set qwen_enable_ldap to true to enable Active Directory login;
+      # the LDAP_* variables are then generated from qwen_ldap_*.
+{% endif %}
+    volumes:
+      - open-webui-data:/app/backend/data
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    # No published port and no built-in authentication: never exposed.
+    volumes:
+      - {{ qwen_monitoring_dir }}/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    restart: always
+    # No published port: reached through Nginx (grafana.<domain>).
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    depends_on:
+      - open-webui
+      - grafana
+      - vllm
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - {{ qwen_nginx_conf_dir }}:/etc/nginx/conf.d:ro
+      - {{ qwen_nginx_ssl_dir }}:/etc/nginx/ssl:ro
+
+volumes:
+  open-webui-data:

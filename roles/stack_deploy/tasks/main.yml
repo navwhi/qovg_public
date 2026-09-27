@@ -1,0 +1,10 @@
+---
+- name: Start (or update) the Docker Compose stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ qwen_compose_dir }}"
+    state: present
+  register: stack_deploy_result
+
+- name: Show the containers of the stack
+  ansible.builtin.debug:
+    msg: "{{ stack_deploy_result.containers | default([]) | map(attribute='Name') | list }}"

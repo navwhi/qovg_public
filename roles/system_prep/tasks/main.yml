@@ -1,0 +1,31 @@
+---
+- name: Enable extra Debian components (deb822 sources format)
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list.d/debian.sources
+    regexp: '^Components: main$'
+    replace: "Components: main {{ system_prep_extra_components }}"
+  register: system_prep_deb822
+  failed_when: false
+
+- name: Enable extra Debian components (legacy sources.list format)
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list
+    regexp: '^(deb\s+\S+\s+\S+\s+main)$'
+    replace: '\1 {{ system_prep_extra_components }}'
+  when: not (system_prep_deb822.changed | default(false))
+  failed_when: false
+
+- name: Update the APT cache and upgrade the system
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: safe
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: "{{ system_prep_base_packages }}"
+    state: present
+
+- name: Install headers for the running kernel
+  ansible.builtin.apt:
+    name: "linux-headers-{{ ansible_facts['kernel'] }}"
+    state: present
